@@ -1,0 +1,25 @@
+# objects
+*.o
+*.obj
+
+# libraries
+*.lib
+*.a
+
+# dyn libraries
+*.dll
+*.so
+*.so.*
+*.dylib
+
+# executables
+*.exe
+*.app
+
+#GNU global
+GPATH
+GRTAGS
+GTAGS
+
+*~
+src/eproject.cfg

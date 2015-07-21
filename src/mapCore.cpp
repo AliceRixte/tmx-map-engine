@@ -5,7 +5,7 @@ namespace tme
 {
   TmxME::TmxME(SDL_Renderer *a_renderer, char* fichier, SDL_Rect a_rectMap)
   {
-    renderer = a_renderer;//récupération des arguments
+    renderer = a_renderer;
     rectMap = a_rectMap;
 
 
@@ -20,7 +20,8 @@ namespace tme
 
     tmx_tileset* ts = tmxMap->ts_head;
 
-    while(ts)//conversion of the tilesets to SDL_Texture
+    //conversion of the tilesets to SDL_Texture
+    while(ts)
       {
         SDL_Surface* tileset_s = (SDL_Surface*) ts->image->resource_image;
         ts->image->resource_image = SDL_CreateTextureFromSurface(renderer,tileset_s);
@@ -33,7 +34,7 @@ namespace tme
 
     setCameraPosition(0,0);
 
-    //gestion du mouvement
+    //movement initialisation
     //posX = posY = movX = movY = NULL;
     //movW = movH = 0;
     //isStoppedX = isStoppedY = true;

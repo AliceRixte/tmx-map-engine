@@ -1,1 +1,4 @@
-*Not stable : verify scrollX and scrollY values.
+*Not stable : verify scrollX and scrollY values : Done
+*Stability of displaying
+*verbose mode for the TmxME object.
+*simplify the code of the display (very confuse)

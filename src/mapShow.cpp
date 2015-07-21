@@ -4,6 +4,7 @@ using namespace std;
 namespace tme
 {
 
+  //This function sets the position of the camera. Use this function to implement a scrolling
   void TmxME::setCameraPosition(int a_scrollX, int a_scrollY)
   {
     int widthMap = tmxMap->width * tmxMap->tile_width;
@@ -24,6 +25,7 @@ namespace tme
       scrollY = a_scrollY;
   }
 
+  //Put this function at the beginning of the event loop. You then have to display the caracters and the sprites on the map
   void TmxME::display()
   {
 
@@ -40,17 +42,18 @@ namespace tme
     SDL_Rect clip = {modScrollX,modScrollY,tmxMap->tile_width - modScrollX,tmxMap->tile_height - modScrollY};
     SDL_Rect pos = {rectMap.x,rectMap.y,tmxMap->tile_width - modScrollX,tmxMap->tile_height - modScrollY};
 
+    // corner up left
     ts = tmx_get_tileset(tmxMap, layer->content.gids[(i*tmxMap->width)+dep_j], (unsigned int*)&(clip.x), (unsigned int*)&(clip.y));
     clip.x += modScrollX;
     clip.y += modScrollY;
-    
-    SDL_RenderCopy(renderer,(SDL_Texture*) ts->image->resource_image,&clip,&pos);// corner up left
+    SDL_RenderCopy(renderer,(SDL_Texture*) ts->image->resource_image,&clip,&pos);
 
+    //above line
     pos.x += pos.w;
     pos.w = tmxMap->tile_width;
     //clip.x = 0;
     clip.w = tmxMap->tile_width;
-    for(int j = dep_j + 1; j < min(screenW,(int)tmxMap->width); j++) //display of the above line
+    for(int j = dep_j + 1; j < min(screenW,(int)tmxMap->width); j++) 
       {
         ts = tmx_get_tileset(tmxMap, layer->content.gids[(i*tmxMap->width)+j], (unsigned int*)&(clip.x), (unsigned int*)&(clip.y));
         clip.y += modScrollY;
@@ -58,41 +61,41 @@ namespace tme
         pos.x += pos.w;
       }
 
-    clip.w = modScrollX;//coin supérieur droit
+    //corner up right
+    clip.w = modScrollX;
     pos.w = modScrollX;
     ts = tmx_get_tileset(tmxMap, layer->content.gids[(i*tmxMap->width)+screenW], (unsigned int*)&(clip.x), (unsigned int*)&(clip.y));
     clip.y += modScrollY;
     if(screenW<tmxMap->width)//the screen is not bigger than the map
       SDL_RenderCopy(renderer,(SDL_Texture*) ts->image->resource_image,&clip,&pos);
 
+
     clip.h = tmxMap->tile_height;
     pos.y += pos.h;
     pos.h = tmxMap->tile_height;
     i++;
-
-
-    for(; i<min((int)tmxMap->height,screenH); i++) //inside
+    for(; i<min((int)tmxMap->height,screenH); i++)
       {
+	//Left line
         ts = tmx_get_tileset(tmxMap, layer->content.gids[(i*tmxMap->width)+dep_j], (unsigned int*)&(clip.x), (unsigned int*)&(clip.y));
         clip.x += modScrollX;
         clip.w = tmxMap->tile_width - modScrollX;
-
-        pos.x = rectMap.x; //reinitialise at each line beginning
+        pos.x = rectMap.x; 
         pos.w = clip.w;
+        SDL_RenderCopy(renderer,(SDL_Texture*) ts->image->resource_image,&clip,&pos);
 
-        SDL_RenderCopy(renderer,(SDL_Texture*) ts->image->resource_image,&clip,&pos);//left border
-
+	//middle tiles
         clip.w = tmxMap->tile_width;
         pos.x += pos.w;
         pos.w = clip.w;
-
-        for(int j = dep_j + 1; j<min((int)tmxMap->width,screenW) ; j++)//corps de l'affichage
+        for(int j = dep_j + 1; j<min((int)tmxMap->width,screenW) ; j++)
 	  {
             ts = tmx_get_tileset(tmxMap, layer->content.gids[(i*tmxMap->width)+j], (unsigned int*)&(clip.x), (unsigned int*)&(clip.y));
             SDL_RenderCopy(renderer,(SDL_Texture*) ts->image->resource_image,&clip,&pos);
             pos.x += pos.w;
 	  }
 
+	//right line
         if(screenW<tmxMap->width)
 	  {
             ts = tmx_get_tileset(tmxMap, layer->content.gids[(i*tmxMap->width)+screenW], (unsigned int*)&(clip.x), (unsigned int*)&(clip.y));
@@ -101,6 +104,7 @@ namespace tme
             SDL_RenderCopy(renderer,(SDL_Texture*) ts->image->resource_image,&clip,&pos);
 	  }
 
+	//next line
         pos.y += pos.h;
       }
 
@@ -108,8 +112,9 @@ namespace tme
 
     if(i<tmxMap->height)
       {
+	// corner down left
         ts = tmx_get_tileset(tmxMap, layer->content.gids[(i*tmxMap->width)+dep_j], (unsigned int*)&(clip.x), (unsigned int*)&(clip.y));
-        clip.x += modScrollX; // corner down left
+        clip.x += modScrollX; 
         clip.w = tmxMap->tile_width - modScrollX;
         clip.h = modScrollY;
         pos.x = rectMap.x;
@@ -118,11 +123,11 @@ namespace tme
         SDL_RenderCopy(renderer,(SDL_Texture*) ts->image->resource_image,&clip,&pos);
 
 
+	//Bottom line
         clip.w = tmxMap->tile_width;
         pos.x += pos.w;
         pos.w = clip.w;
-
-        for(int j = dep_j + 1; j < min(screenW,(int)tmxMap->width); j++) //bottom line
+        for(int j = dep_j + 1; j < min(screenW,(int)tmxMap->width); j++) 
 	  {
             ts = tmx_get_tileset(tmxMap, layer->content.gids[(i*tmxMap->width)+j], (unsigned int*)&(clip.x), (unsigned int*)&(clip.y));
             if(SDL_RenderCopy(renderer,(SDL_Texture*) ts->image->resource_image,&clip,&pos)<0)
@@ -130,11 +135,12 @@ namespace tme
             pos.x += pos.w;
 	  }
 
+	//bottom right corner
         if(screenW < tmxMap->width)
 	  ts = tmx_get_tileset(tmxMap, layer->content.gids[(i*tmxMap->width)+screenW], (unsigned int*)&(clip.x), (unsigned int*)&(clip.y));
         clip.w = modScrollX;
         pos.w = clip.w;
-        SDL_RenderCopy(renderer,(SDL_Texture*) ts->image->resource_image,&clip,&pos);//bottom right corner
+        SDL_RenderCopy(renderer,(SDL_Texture*) ts->image->resource_image,&clip,&pos);
       }
 
   }

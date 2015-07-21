@@ -1,15 +1,15 @@
 .PHONY : clean,mrproper
 
 CXX = g++
-LIB = libtmxme.a
-LIBH = src/map.hpp
+LIB = example/libtmxme.a
+LIBH = src/tme.hpp
 AR = ar
 LDFLAGS = 
-CXXFLAGS = -std=c++11
+CXXFLAGS = -std=c++11 -I/src
 
 all : $(LIB)
 
-$(LIB) : mapEvent.o mapMov.o mapShow.o fonctionsUtiles.o map.o
+$(LIB) : mapEvent.o mapMov.o mapShow.o mapCore.o
 	$(AR) -q $(LIB) $^
 %.o : src/%.cpp $(LIBH)
 	$(CXX) -c $< -o $@ $(CXXFLAGS)

@@ -1,153 +1,116 @@
-
-#include "map.hpp"
+#include "tme.hpp"
 
 using namespace std;
-
-void Map::setRectMap(SDL_Rect a_rectMap)//changer rectangle d'affichage de la map
-{
-    rectMap = a_rectMap;
-}
-
-void Map::getDimMap(int* w, int* h)
-{
-    (*w) = tmx_carte->tile_width * tmx_carte->width;
-    (*h) = tmx_carte->tile_height * tmx_carte->height;
-}
-
-SDL_Rect Map::getRectMap()//récupère rectangle d'affichage de la map
-{
-    return rectMap;
-}
-
-SDL_Rect Map::posMapToPosRend(SDL_Rect pos)//conversion position
-{
-    return {rectMap.x + pos.x - scrollX,rectMap.y + pos.y - scrollY,pos.w,pos.h};
-}
-
-void Map::getPosInit(float* x, float* y)//récupère position initiale
-{
-    (*x) = (float)posInitX;
-    (*y) = (float)posInitY;
-}
-
-
-// gestion du scrolling par rapport à une position donnée.
-void Map::setPosCam(float a_x, float a_y)
-{
-    int x = round(a_x);
-    int y = round(a_y);
-
-    int tailleW = tmx_carte->tile_width * tmx_carte->width;
-    int tailleH = tmx_carte->tile_height * tmx_carte->height;
-    if(x<0 || y<0 || x>=tailleW || y>=tailleH)
-        cout<<"Erreur dans la position de la map : la position dépasse la map"<<endl;
-
-    //gestion position x :
-    if(tailleW<rectMap.w || x < rectMap.w/2) //gestion des bords
-        scrollX = 0;
-
-    else if(tailleW - x < rectMap.w/2)
-        scrollX = tailleW - rectMap.w;
-    else // on a suffisamment de place des deux côtés
-        scrollX = x - rectMap.w/2;
-
-    if(tailleH<rectMap.h || y < rectMap.h/2) //gestion des bords
-        scrollY = 0;
-    else if(tailleH - y < rectMap.h/2)
-        scrollY = tailleH -rectMap.h;
-    else // on a suffisamment de place des deux côtés
-        scrollY = y - rectMap.h/2;
-}
-
-
-void Map::showMap()
+namespace tme
 {
 
-    tmx_tileset *ts;
-    tmx_layer* layer = tmx_carte->ly_head;
+  void TmxME::setCameraPosition(int a_scrollX, int a_scrollY)
+  {
+    int widthMap = tmxMap->width * tmxMap->tile_width;
+    int heightMap = tmxMap->height * tmxMap->tile_height;
 
-    int modScrollX = scrollX%tmx_carte->tile_width;//permet de ne coller que des bouts de tile
-    int modScrollY = scrollY%tmx_carte->tile_height;
-    int i = scrollY/tmx_carte->tile_height ;
-    int dep_j = scrollX/tmx_carte->tile_width ;
-    int ecranW = rectMap.w / tmx_carte->tile_width + dep_j + 1;//dernier tile de l'écran
-    int ecranH = rectMap.h / tmx_carte->tile_height + i + 1;
+    if(a_scrollX <= 0)//verify that the scrolling is correct
+      scrollX = 0;
+    else if(a_scrollX >= widthMap)
+      scrollX = widthMap;
+    else
+      scrollX = a_scrollX;
 
-    SDL_Rect clip = {modScrollX,modScrollY,tmx_carte->tile_width - modScrollX,tmx_carte->tile_height - modScrollY};//coin sup gauche
-    SDL_Rect pos = {rectMap.x,rectMap.y,tmx_carte->tile_width - modScrollX,tmx_carte->tile_height - modScrollY};
+    if(a_scrollY <= 0)
+      scrollY = 0;
+    else if(a_scrollY >= heightMap)
+      scrollY = heightMap;
+    else
+      scrollY = a_scrollY;
+  }
 
-    ts = tmx_get_tileset(tmx_carte, layer->content.gids[(i*tmx_carte->width)+dep_j], (unsigned int*)&(clip.x), (unsigned int*)&(clip.y));
+  void TmxME::display()
+  {
+
+    tmx_tileset* ts;
+    tmx_layer* layer = tmxMap->ly_head;
+
+    int modScrollX = scrollX%tmxMap->tile_width;
+    int modScrollY = scrollY%tmxMap->tile_height;
+    int i = scrollY/tmxMap->tile_height ;
+    int dep_j = scrollX/tmxMap->tile_width ;
+    int screenW = rectMap.w / tmxMap->tile_width + dep_j + 1;//the last tile in the screen
+    int screenH = rectMap.h / tmxMap->tile_height + i + 1;
+
+    SDL_Rect clip = {modScrollX,modScrollY,tmxMap->tile_width - modScrollX,tmxMap->tile_height - modScrollY};
+    SDL_Rect pos = {rectMap.x,rectMap.y,tmxMap->tile_width - modScrollX,tmxMap->tile_height - modScrollY};
+
+    ts = tmx_get_tileset(tmxMap, layer->content.gids[(i*tmxMap->width)+dep_j], (unsigned int*)&(clip.x), (unsigned int*)&(clip.y));
     clip.x += modScrollX;
     clip.y += modScrollY;
-    SDL_RenderCopy(renderer,(SDL_Texture*) ts->image->resource_image,&clip,&pos);// coin supérieur gauche
-
+    
+    SDL_RenderCopy(renderer,(SDL_Texture*) ts->image->resource_image,&clip,&pos);// corner up left
 
     pos.x += pos.w;
-    pos.w = tmx_carte->tile_width;
+    pos.w = tmxMap->tile_width;
     //clip.x = 0;
-    clip.w = tmx_carte->tile_width;
-    for(int j = dep_j + 1; j < min(ecranW,(int)tmx_carte->width); j++) //ligne du haut + vérification : écran plus gd que map?
-    {
-        ts = tmx_get_tileset(tmx_carte, layer->content.gids[(i*tmx_carte->width)+j], (unsigned int*)&(clip.x), (unsigned int*)&(clip.y));
+    clip.w = tmxMap->tile_width;
+    for(int j = dep_j + 1; j < min(screenW,(int)tmxMap->width); j++) //display of the above line
+      {
+        ts = tmx_get_tileset(tmxMap, layer->content.gids[(i*tmxMap->width)+j], (unsigned int*)&(clip.x), (unsigned int*)&(clip.y));
         clip.y += modScrollY;
         SDL_RenderCopy(renderer,(SDL_Texture*) ts->image->resource_image,&clip,&pos);
         pos.x += pos.w;
-    }
-    //ligne finie convertir à partir d'ici
+      }
 
     clip.w = modScrollX;//coin supérieur droit
     pos.w = modScrollX;
-    ts = tmx_get_tileset(tmx_carte, layer->content.gids[(i*tmx_carte->width)+ecranW], (unsigned int*)&(clip.x), (unsigned int*)&(clip.y));
+    ts = tmx_get_tileset(tmxMap, layer->content.gids[(i*tmxMap->width)+screenW], (unsigned int*)&(clip.x), (unsigned int*)&(clip.y));
     clip.y += modScrollY;
-    if(ecranW<tmx_carte->width)//on vérifie que l'écran n'est pas plus grand que la map
-        SDL_RenderCopy(renderer,(SDL_Texture*) ts->image->resource_image,&clip,&pos);
+    if(screenW<tmxMap->width)//the screen is not bigger than the map
+      SDL_RenderCopy(renderer,(SDL_Texture*) ts->image->resource_image,&clip,&pos);
 
-    clip.h = tmx_carte->tile_height;
+    clip.h = tmxMap->tile_height;
     pos.y += pos.h;
-    pos.h = tmx_carte->tile_height;
+    pos.h = tmxMap->tile_height;
     i++;
 
 
-    for(; i<min((int)tmx_carte->height,ecranH); i++) //corps
-    {
-        ts = tmx_get_tileset(tmx_carte, layer->content.gids[(i*tmx_carte->width)+dep_j], (unsigned int*)&(clip.x), (unsigned int*)&(clip.y));
+    for(; i<min((int)tmxMap->height,screenH); i++) //inside
+      {
+        ts = tmx_get_tileset(tmxMap, layer->content.gids[(i*tmxMap->width)+dep_j], (unsigned int*)&(clip.x), (unsigned int*)&(clip.y));
         clip.x += modScrollX;
-        clip.w = tmx_carte->tile_width - modScrollX;
+        clip.w = tmxMap->tile_width - modScrollX;
 
-        pos.x = rectMap.x; //réinitialisation à chaque début de line
+        pos.x = rectMap.x; //reinitialise at each line beginning
         pos.w = clip.w;
 
-        SDL_RenderCopy(renderer,(SDL_Texture*) ts->image->resource_image,&clip,&pos);//bord gauche
+        SDL_RenderCopy(renderer,(SDL_Texture*) ts->image->resource_image,&clip,&pos);//left border
 
-        clip.w = tmx_carte->tile_width;
+        clip.w = tmxMap->tile_width;
         pos.x += pos.w;
         pos.w = clip.w;
 
-        for(int j = dep_j + 1; j<min((int)tmx_carte->width,ecranW) ; j++)//corps de l'affichage
-        {
-            ts = tmx_get_tileset(tmx_carte, layer->content.gids[(i*tmx_carte->width)+j], (unsigned int*)&(clip.x), (unsigned int*)&(clip.y));
+        for(int j = dep_j + 1; j<min((int)tmxMap->width,screenW) ; j++)//corps de l'affichage
+	  {
+            ts = tmx_get_tileset(tmxMap, layer->content.gids[(i*tmxMap->width)+j], (unsigned int*)&(clip.x), (unsigned int*)&(clip.y));
             SDL_RenderCopy(renderer,(SDL_Texture*) ts->image->resource_image,&clip,&pos);
             pos.x += pos.w;
-        }
+	  }
 
-        if(ecranW<tmx_carte->width)
-        {
-            ts = tmx_get_tileset(tmx_carte, layer->content.gids[(i*tmx_carte->width)+ecranW], (unsigned int*)&(clip.x), (unsigned int*)&(clip.y));
+        if(screenW<tmxMap->width)
+	  {
+            ts = tmx_get_tileset(tmxMap, layer->content.gids[(i*tmxMap->width)+screenW], (unsigned int*)&(clip.x), (unsigned int*)&(clip.y));
             clip.w = modScrollX;
             pos.w = clip.w;
             SDL_RenderCopy(renderer,(SDL_Texture*) ts->image->resource_image,&clip,&pos);
-        }
+	  }
 
         pos.y += pos.h;
-    }
+      }
 
 
 
-    if(i<tmx_carte->height)
-    {
-        ts = tmx_get_tileset(tmx_carte, layer->content.gids[(i*tmx_carte->width)+dep_j], (unsigned int*)&(clip.x), (unsigned int*)&(clip.y));
-        clip.x += modScrollX; // coin inférieur gauche
-        clip.w = tmx_carte->tile_width - modScrollX;
+    if(i<tmxMap->height)
+      {
+        ts = tmx_get_tileset(tmxMap, layer->content.gids[(i*tmxMap->width)+dep_j], (unsigned int*)&(clip.x), (unsigned int*)&(clip.y));
+        clip.x += modScrollX; // corner down left
+        clip.w = tmxMap->tile_width - modScrollX;
         clip.h = modScrollY;
         pos.x = rectMap.x;
         pos.w = clip.w;
@@ -155,23 +118,24 @@ void Map::showMap()
         SDL_RenderCopy(renderer,(SDL_Texture*) ts->image->resource_image,&clip,&pos);
 
 
-        clip.w = tmx_carte->tile_width;
+        clip.w = tmxMap->tile_width;
         pos.x += pos.w;
         pos.w = clip.w;
 
-        for(int j = dep_j + 1; j < min(ecranW,(int)tmx_carte->width); j++) //ligne du bas
-        {
-            ts = tmx_get_tileset(tmx_carte, layer->content.gids[(i*tmx_carte->width)+j], (unsigned int*)&(clip.x), (unsigned int*)&(clip.y));
+        for(int j = dep_j + 1; j < min(screenW,(int)tmxMap->width); j++) //bottom line
+	  {
+            ts = tmx_get_tileset(tmxMap, layer->content.gids[(i*tmxMap->width)+j], (unsigned int*)&(clip.x), (unsigned int*)&(clip.y));
             if(SDL_RenderCopy(renderer,(SDL_Texture*) ts->image->resource_image,&clip,&pos)<0)
-                cout<<"Erreur dans l'affichage de la map (dernière ligne) : "<<SDL_GetError()<<endl;
+	      cout<<"Erreur dans l'affichage de la map (dernière ligne) : "<<SDL_GetError()<<endl;
             pos.x += pos.w;
-        }
+	  }
 
-        if(ecranW < tmx_carte->width)
-            ts = tmx_get_tileset(tmx_carte, layer->content.gids[(i*tmx_carte->width)+ecranW], (unsigned int*)&(clip.x), (unsigned int*)&(clip.y));
+        if(screenW < tmxMap->width)
+	  ts = tmx_get_tileset(tmxMap, layer->content.gids[(i*tmxMap->width)+screenW], (unsigned int*)&(clip.x), (unsigned int*)&(clip.y));
         clip.w = modScrollX;
         pos.w = clip.w;
-        SDL_RenderCopy(renderer,(SDL_Texture*) ts->image->resource_image,&clip,&pos);//coin inférieur droit
-    }
+        SDL_RenderCopy(renderer,(SDL_Texture*) ts->image->resource_image,&clip,&pos);//bottom right corner
+      }
 
+  }
 }
